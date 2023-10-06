@@ -4,7 +4,7 @@ import { def } from "./uitls"
 
 /**
  * Observer 类会附加到每一个被侦测的 object 上
- * 一旦被附加上，Observer 会将 object 的所有睡醒转换为 getter/setter 的形式
+ * 一旦被附加上，Observer 会将 object 的所有属性转换为 getter/setter 的形式
  * 来收集属性的依赖，并且当属性发生变化时会通知这些依赖
  */
 export class Observer {
@@ -50,7 +50,7 @@ export class Observer {
 }
 
 function defineReactive(data, key, value) {
-  // childOb 是一个 Observer 的实例
+  // childOb 是一个 Observer 的实例，主要是为了兼容数组，获取数组上的 __ob__ 选项
   let childOb = observe(value)
   // 这个 dep 是一个闭包，用来管理这个属性的依赖的，里面可以装多个 watcher
   const dep = new Dep()
@@ -58,11 +58,12 @@ function defineReactive(data, key, value) {
     enumerable: true,
     configurable: true,
     get() {
-      // 收集依赖（这块主要在实例化 Watcher 的时候起到作用）
+      // 收集依赖（这块主要在实例化 Watcher 的时候起到作用，这个主要是对象使用的）
       dep.depend()
 
       // 这里手动管理 Observer 的依赖收集（主要是给数组中使用的）
       if (childOb) {
+        // 这个 childOb.dep 的依赖触发时机是在重写的数组原型方法中
         childOb.dep.depend()
       }
       return value
@@ -70,6 +71,7 @@ function defineReactive(data, key, value) {
     set(newVal) {
       console.log('设置值');
       if (value === newVal) return
+      // 形参 value 作为一个闭包，保存为当前变量的实际值
       value = newVal
       // 触发
       dep.notify()
@@ -88,8 +90,10 @@ export function observe(value, asRootData) {
   }
   let ob
   if (Object.prototype.hasOwnProperty(value, '__ob__') && value.__ob__ instanceof Observer) {
+    // __ob__ 存放的是 Observer 实例对象
     return value.__ob__
   } else {
+    // 如果还不是响应式的话，则直接变成响应式
     ob = new Observer(value)
   }
   return ob
