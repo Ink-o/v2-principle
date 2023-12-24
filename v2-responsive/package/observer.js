@@ -44,6 +44,7 @@ export class Observer {
    */
   observeArray(items) {
     for (let i = 0; i < items.length; i++) {
+      // observe 里可以让每个未响应的值都走到观察逻辑中
       observe(items[i])
     }
   }
@@ -58,10 +59,12 @@ function defineReactive(data, key, value) {
     enumerable: true,
     configurable: true,
     get() {
+      // 下面收集 2 份，一份自身用，一份给数组用
+
       // 收集依赖（这块主要在实例化 Watcher 的时候起到作用，这个主要是对象使用的）
       dep.depend()
 
-      // 这里手动管理 Observer 的依赖收集（主要是给数组中使用的）
+      // 这里手动管理 Observer 实例 value 上的依赖收集（主要是给数组中使用的）
       if (childOb) {
         // 这个 childOb.dep 的依赖触发时机是在重写的数组原型方法中
         childOb.dep.depend()
@@ -85,6 +88,7 @@ function defineReactive(data, key, value) {
  * 如果 value 已经存在一个 Observer 实例，则直接返回它
  */
 export function observe(value, asRootData) {
+  // 原始值不进行处理
   if (typeof value !== 'object' || value === null) {
     return
   }
